@@ -1,6 +1,11 @@
 <?php
 namespace Coolin\Html5Uploader;
 
+/**
+ * Class Uploader
+ * @author Coolin.cz
+ * @package Coolin\Html5Uploader
+ */
 class Uploader{
 
     private $dir;
