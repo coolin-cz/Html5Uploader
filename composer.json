@@ -1,0 +1,16 @@
+{
+  "name": "Coolin/Html5Uploader",
+  "description": "HTML5 Uploader pro projekty v Nette Frameworku",
+  "homepage": "https://coolin.cz",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Coolin.cz s.r.o.",
+      "homepage": "https://coolin.cz"
+    }
+  ],
+  "require": {
+    "php": ">= 5.6.1"
+  },
+  "minimum-stability": "dev"
+}

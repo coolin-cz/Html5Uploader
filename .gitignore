@@ -22,7 +22,9 @@ Thumbs.db
 *.sbr
 **.idea
 *.js.map
-/logs/
-/temp/
 
 /src/TS/*
+/logs/
+/temp/
+/vendor/
+/composer.lock
