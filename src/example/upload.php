@@ -12,5 +12,5 @@ function generateRandomString($length = 10){
     return $randomString;
 }
 
-$uploader = new \InCoolin\Html5Uploader\Uploader(__DIR__.'/uploads');
+$uploader = new Coolin\Html5Uploader\Uploader(__DIR__.'/uploads');
 $uploader->upload(generateRandomString().'.jpg');
