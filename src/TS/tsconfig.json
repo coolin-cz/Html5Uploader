@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "amd",
+    "target": "es5",
+    "sourceMap": false,
+    "watch": true
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "files": [
+    "./html5uploader.ts"
+  ]
+}

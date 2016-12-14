@@ -1,0 +1,14 @@
+{
+  "name": "HTML5Uploader",
+  "version": "0.0.1",
+  "description": "HTML5 Uploader",
+  "scripts": {
+    "deploy-ts": "tsc",
+    "deploy": "webpack"
+  },
+  "dependencies": {
+    "ts-loader": "^0.8.1",
+    "webpack": "*",
+    "typescript": "*"
+  }
+}
