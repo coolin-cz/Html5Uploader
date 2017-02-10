@@ -34,7 +34,7 @@ class Uploader{
 
                     $path = $dir != null ? $dir : $this->getDir();
                     if(!is_dir($path)){
-                        mkdir($path, 775, true);
+                        mkdir($path, 0775, true);
                     }
 
                     file_put_contents($path.'/'.$fn, file_get_contents($file['tmp_name']));
@@ -45,7 +45,7 @@ class Uploader{
             $path = $dir != null ? $dir : $this->getDir();
 
             if(!is_dir($path)){
-                mkdir($path, 775, true);
+                mkdir($path, 0775, true);
             }
 
             $path = $path.'/'.$name;
