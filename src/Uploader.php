@@ -31,12 +31,23 @@ class Uploader{
             foreach($_FILES as $file){
                 if($file['error'] == UPLOAD_ERR_OK){
                     $fn = $fileName != null ? $fileName : $file['name'];
-                    file_put_contents($this->dir.'/'.$fn, file_get_contents($file['tmp_name']));
+
+                    $path = $dir != null ? $dir : $this->getDir();
+                    if(!is_dir($path)){
+                        mkdir($path, 775, true);
+                    }
+
+                    file_put_contents($path.'/'.$fn, file_get_contents($file['tmp_name']));
                 }
             }
         }else{
             $name = $fileName != null ? $fileName : $fn;
             $path = $dir != null ? $dir : $this->getDir();
+
+            if(!is_dir($path)){
+                mkdir($path, 775, true);
+            }
+
             $path = $path.'/'.$name;
             try{
                 file_put_contents($path, file_get_contents('php://input'));
