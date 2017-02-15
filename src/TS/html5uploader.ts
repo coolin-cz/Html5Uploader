@@ -183,6 +183,7 @@ export class uploader{
                     }
                 };
             }
+
             let form: HTMLFormElement = <HTMLFormElement>document.getElementById(this.params.formId);
 
             // start upload
@@ -202,15 +203,59 @@ export class uploader{
         let action :String = $("[name=_do]", form).attr("value");
         data.append("_do", action);
 
+        let self = this;
+
         $.ajax({
+                xhr: function (){
+                    return self.createXhrForNette(file);
+                },
                 url: form.action,
                 data: data,
                 cache: false,
                 contentType: false,
                 processData: false,
                 type: 'POST',
-                beforeSend: function(xhr){xhr.setRequestHeader("X-DRAGDROP", "yes")},
+                beforeSend: function(xhr){
+                    xhr.setRequestHeader("X-DRAGDROP", "yes")
+                },
             });
+    }
+
+    private createXhrForNette(file: File){
+        let xhr: XMLHttpRequest = new XMLHttpRequest();
+        // create progress bar
+        if(this.params.progressBarDiv != null){
+            let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
+            let progress = document.createElement("div");
+            let bar = document.createElement("div");
+
+            progress.className = "upload";
+            o.appendChild(progress);
+            progress.appendChild(bar);
+
+            bar.className = "bar";
+            bar.appendChild(document.createTextNode(file.name));
+
+
+            // progress bar
+            xhr.upload.addEventListener("progress", function(e: ProgressEvent){
+                let pc: number = (e.loaded / e.total * 100);
+                bar.style.width = pc + "%"
+            }, false);
+
+            // file received/failed
+            let self = this;
+            xhr.onreadystatechange = function(e){
+                if(xhr.readyState == 4){
+                    bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
+                    if(xhr.status !== 200){
+                        self.showMessage("Při nahrávání obrázku "+file.name+" došlo k chybě.", "error");
+                    }
+                    $(progress).delay(5000).fadeOut(600);
+                }
+            };
+        }
+        return xhr;
     }
 
     private showPreview(msg: string): void{
