@@ -111,9 +111,11 @@ export class uploader{
         e.preventDefault();
 
         if(e.type == "dragover"){
-            $(e.target).addClass("hover");
+            //$(e.target).addClass("hover");
+            this.objects.fileDropArea.classList.add("hover");
         }else{
-            $(e.target).removeClass("hover");
+            //$(e.target).removeClass("hover");
+            this.objects.fileDropArea.classList.remove("hover");
         }
     }
 
