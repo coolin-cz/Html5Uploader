@@ -50,6 +50,8 @@ export class uploader{
         this.params.nette = this.params.nette ? this.params.nette : false;
         this.params.replacePreviews = this.params.replacePreviews ? this.params.replacePreviews : false;
 
+        self.createMessageDiv();
+
         this.objects.fileSelect = document.getElementById(this.params.fileSelectId);
         this.objects.fileSelect.addEventListener("change", function(e){
             self.fileSelectHandler(e)
@@ -97,11 +99,24 @@ export class uploader{
                 this.parseFile(f);
                 this.params.nette ? this.uploadFileNette(f) : this.uploadFile(f);
             }else{
-                let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
-                let progress = document.createElement("p");
-                o.appendChild(progress);
-                progress.appendChild(document.createTextNode("upload " + f.name));
-                progress.className = "failure";
+                if(typeof this.params.progressBarDiv !== 'undefined'){
+                    let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
+                    let progress = document.createElement("div");
+                    let bar = document.createElement("div");
+
+                    progress.className = "upload";
+                    o.appendChild(progress);
+                    progress.appendChild(bar);
+
+                    bar.className = "bar";
+                    bar.appendChild(document.createTextNode(f.name));
+                    bar.style.width = "100%"
+
+                    bar.className = "bar failure";
+
+                    $(progress).delay(5000).fadeOut(300);
+                }
+                this.showMessage("Obrázek "+f.name+" je příliš velký.", "error");
             }
         }
     }
@@ -134,26 +149,37 @@ export class uploader{
 
     private uploadFile(file: File): void{
         let xhr: XMLHttpRequest = new XMLHttpRequest();
-        if(xhr.upload && file.type == "image/jpeg"){
+        if(xhr.upload && (file.type == "image/jpeg" || file.type == "image/png")){
 
             // create progress bar
             if(this.params.progressBarDiv != null){
                 let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
-                let progress = document.createElement("p");
+                let progress = document.createElement("div");
+                let bar = document.createElement("div");
+
+                progress.className = "progressBar";
                 o.appendChild(progress);
-                progress.appendChild(document.createTextNode("upload " + file.name));
+                progress.appendChild(bar);
+
+                bar.className = "bar";
+                bar.appendChild(document.createTextNode(file.name));
 
 
                 // progress bar
                 xhr.upload.addEventListener("progress", function(e: ProgressEvent){
                     let pc: number = 100 - (e.loaded / e.total * 100);
-                    progress.style.backgroundPosition = pc + "% 0"
+                    bar.style.width = pc + "%"
                 }, false);
 
                 // file received/failed
+                let self = this;
                 xhr.onreadystatechange = function(e){
                     if(xhr.readyState == 4){
-                        progress.className = (xhr.status == 200 ? "success" : "failure");
+                        bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
+                        if(xhr.status !== 200){
+                            self.showMessage("Při nahrávání obrázku "+file.name+" došlo k chybě.", "error");
+                        }
+                        $(progress).delay(5000).fadeOut(600);
                     }
                 };
             }
@@ -194,5 +220,53 @@ export class uploader{
             this.objects.previewDiv.innerHTML = this.objects.previewDiv.innerHTML + msg;
         }
 
+    }
+
+    private createMessageDiv(){
+        if(!this.params.nette){ // pokud nepouzivame Nette vytvorime si div. pokud se pouziva Nette vyuzijeme flashmesages
+            let messageDiv = document.getElementById("uploaderMessages");
+            if(messageDiv === null){
+                messageDiv = document.createElement("div");
+                messageDiv.id = "uploaderMessages";
+                document.body.appendChild(messageDiv);
+            }
+        }
+    }
+
+    private showMessage(msg: string, type: string){
+        let p = document.createElement("p");
+
+        if(this.params.nette){
+            let flashMessages;
+            p.textContent = msg;
+
+            let flashMessage = document.createElement("div");
+            flashMessage.className = "flashMessage " + type;
+            flashMessage.appendChild(p);
+
+            if(document.getElementsByClassName("flashMessages").length === 0){
+                flashMessages = document.createElement("section");
+                flashMessages.className = "flashMessages";
+                let snippet;
+                if((snippet = document.getElementById("snippet--flashMessages")) !== null){
+                    snippet.appendChild(flashMessages);
+                }else{
+                    document.body.appendChild(flashMessages);
+                }
+            }else{
+                flashMessages = document.getElementsByClassName("flashMessages")[0];
+            }
+            flashMessages.appendChild(flashMessage);
+
+        }else{
+            p.textContent = msg;
+
+            let message = document.createElement("div");
+            message.className = "message";
+            message.appendChild(p);
+
+            let messagesDiv = document.getElementById('uploaderMessages');
+            messagesDiv.appendChild(message);
+        }
     }
 }
