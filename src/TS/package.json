@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "ts-loader": "^0.8.1",
-    "webpack": "*",
+    "webpack": "2.3.1",
     "typescript": "*"
   }
 }

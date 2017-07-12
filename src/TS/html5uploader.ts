@@ -42,6 +42,8 @@ export class uploader{
     
     private params: Params;
 
+    private counter = 0;
+
 
     constructor(parameters: Params){ // TODO (Radim, 24-11-2016): Predelat parametry. Bude jich vic nez je pocet prvku v Uploader
         let self = this;
@@ -70,7 +72,7 @@ export class uploader{
         xhr = new XMLHttpRequest()
         if(xhr.upload){
             this.objects.fileDropArea = document.getElementById(this.params.fileDropAreaId);
-            this.objects.fileDropArea.addEventListener("dragover", function(e){
+            this.objects.fileDropArea.addEventListener("dragenter", function(e){
                 self.fileDragHover(e)
             }, false);
             this.objects.fileDropArea.addEventListener("dragleave", function(e){
@@ -89,6 +91,7 @@ export class uploader{
     fileSelectHandler(e: DragEvent|any): void{
         // cancel event and hover styling
         this.fileDragHover(e);
+        this.counter = 0;
 
         // fetch FileList objects
         let files = e.target.files || e.dataTransfer.files;
@@ -124,13 +127,14 @@ export class uploader{
     public fileDragHover(e): void{
         e.stopPropagation();
         e.preventDefault();
-
-        if(e.type == "dragover"){
-            //$(e.target).addClass("hover");
+        if(e.type == "dragenter"){
+            this.counter++;
             this.objects.fileDropArea.classList.add("hover");
         }else{
-            //$(e.target).removeClass("hover");
-            this.objects.fileDropArea.classList.remove("hover");
+            this.counter--;
+            if(this.counter === 0){
+                this.objects.fileDropArea.classList.remove("hover");
+            }
         }
     }
 
