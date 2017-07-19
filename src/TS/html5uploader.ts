@@ -78,6 +78,10 @@ export class uploader{
             this.objects.fileDropArea.addEventListener("dragleave", function(e){
                 self.fileDragHover(e)
             }, false);
+	        this.objects.fileDropArea.addEventListener("dragover", function(e){
+		        e.stopPropagation();
+		        e.preventDefault();
+	        }, false);
             this.objects.fileDropArea.addEventListener("drop", function(e){
                 self.fileSelectHandler(e)
             }, false);
