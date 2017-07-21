@@ -1,4 +1,5 @@
 <?php
+
 namespace Coolin\Html5Uploader;
 
 /**
@@ -8,71 +9,71 @@ namespace Coolin\Html5Uploader;
  */
 class Uploader{
 
-    private $dir;
+	private $dir;
 
-    function __construct($dir = null){
-        $this->dir = $dir;
-    }
+	function __construct($dir = null){
+		$this->dir = $dir;
+	}
 
-    /**
-     * @param string $fileName
-     * @param string $dir
-     * @throws FileException
-     * @throws HandlerException
-     */
-    public function upload($fileName = null, $dir = null){
-        $fn = (isset($_SERVER['HTTP_X_FILENAME']) ? $_SERVER['HTTP_X_FILENAME'] : false);
+	/**
+	 * @param string $fileName
+	 * @param string $dir
+	 * @throws FileException
+	 * @throws HandlerException
+	 */
+	public function upload($fileName = null, $dir = null){
+		$fn = (isset($_SERVER['HTTP_X_FILENAME']) ? $_SERVER['HTTP_X_FILENAME'] : false);
 
-        if(!$this->beforeHandler($fileName)){
-            throw new HandlerException();
-        }
+		if(!$this->beforeHandler($fileName)){
+			throw new HandlerException();
+		}
 
-        if(!$fn){ //Byl odeslan formular
-            foreach($_FILES as $file){
-                if($file['error'] == UPLOAD_ERR_OK){
-                    $fn = $fileName != null ? $fileName : $file['name'];
+		if(!$fn){ //Byl odeslan formular
+			foreach($_FILES as $file){
+				if($file['error'] == UPLOAD_ERR_OK){
+					$fn = $fileName != null ? $fileName : $file['name'];
 
-                    $path = $dir != null ? $dir : $this->getDir();
-                    if(!is_dir($path)){
-                        mkdir($path, 0775, true);
-                    }
+					$path = $dir != null ? $dir : $this->getDir();
+					if(!is_dir($path)){
+						mkdir($path, 0775, true);
+					}
 
-                    file_put_contents($path.'/'.$fn, file_get_contents($file['tmp_name']));
-                }
-            }
-        }else{
-            $name = $fileName != null ? $fileName : $fn;
-            $path = $dir != null ? $dir : $this->getDir();
+					file_put_contents($path.'/'.$fn, file_get_contents($file['tmp_name']));
+				}
+			}
+		}else{
+			$name = $fileName != null ? $fileName : $fn;
+			$path = $dir != null ? $dir : $this->getDir();
 
-            if(!is_dir($path)){
-                mkdir($path, 0775, true);
-            }
+			if(!is_dir($path)){
+				mkdir($path, 0775, true);
+			}
 
-            $path = $path.'/'.$name;
-            try{
-                file_put_contents($path, file_get_contents('php://input'));
-            }catch(\Exception $e){
-                throw new FileException("Error while saving File!", $e->getCode(), $e);
-            }
+			$path = $path.'/'.$name;
+			try{
+				file_put_contents($path, file_get_contents('php://input'));
+			}catch(\Exception $e){
+				throw new FileException("Error while saving File!", $e->getCode(), $e);
+			}
 
-        }
+		}
 
-        if(!$this->afterHandler($fileName)){
-            throw new HandlerException();
-        }
+		if(!$this->afterHandler($fileName)){
+			throw new HandlerException();
+		}
 
-    }
+	}
 
 
-    public function beforeHandler($fileName){
-        return true;
-    }
+	public function beforeHandler($fileName){
+		return true;
+	}
 
-    public function afterHandler($fileName){
-        return true;
-    }
+	public function afterHandler($fileName){
+		return true;
+	}
 
-    protected function getDir(){
-        return $this->dir != null ? $this->dir : '/*uploads';
-    }
+	protected function getDir(){
+		return $this->dir != null ? $this->dir : '/*uploads';
+	}
 }

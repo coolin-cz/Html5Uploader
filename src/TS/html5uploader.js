@@ -4,10 +4,12 @@
 "use strict";
 var uploader = (function () {
     function uploader(parameters) {
-        this.objects = { fileSelect: null,
+        this.objects = {
+            fileSelect: null,
             fileDropArea: null,
             submitButton: null,
-            previewDiv: null };
+            previewDiv: null
+        };
         this.counter = 0;
         var self = this;
         this.params = parameters;
@@ -37,8 +39,8 @@ var uploader = (function () {
                 self.fileDragHover(e);
             }, false);
             this.objects.fileDropArea.addEventListener("dragover", function (e) {
-                e.stopPropagation();
                 e.preventDefault();
+                e.stopPropagation();
             }, false);
             this.objects.fileDropArea.addEventListener("drop", function (e) {
                 self.fileSelectHandler(e);
@@ -58,14 +60,20 @@ var uploader = (function () {
         for (var i = 0, f = void 0; f = files[i]; i++) {
             if (f.size <= this.params.maxSize) {
                 this.parseFile(f);
+                if (this.params.handlers !== undefined && this.params.handlers.before !== undefined) {
+                    this.params.handlers.before(f);
+                }
                 this.params.nette ? this.uploadFileNette(f) : this.uploadFile(f);
+                if (this.params.handlers !== undefined && this.params.handlers.after !== undefined) {
+                    this.params.handlers.after(f);
+                }
             }
             else {
                 if (typeof this.params.progressBarDiv !== 'undefined') {
                     var o = document.getElementById(this.params.progressBarDiv);
                     var progress = document.createElement("div");
                     var bar = document.createElement("div");
-                    progress.className = "upload";
+                    progress.className = "progressBar";
                     o.appendChild(progress);
                     progress.appendChild(bar);
                     bar.className = "bar";
@@ -79,17 +87,23 @@ var uploader = (function () {
         }
     };
     uploader.prototype.fileDragHover = function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        if (e.type == "dragenter") {
-            this.counter++;
-            this.objects.fileDropArea.classList.add("hover");
-        }
-        else {
-            this.counter--;
-            if (this.counter === 0) {
-                this.objects.fileDropArea.classList.remove("hover");
+        try {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.type == "dragenter") {
+                this.counter++;
+                this.objects.fileDropArea.classList.add("hover");
             }
+            else {
+                this.counter--;
+                if (this.counter === 0) {
+                    this.objects.fileDropArea.classList.remove("hover");
+                }
+            }
+        }
+        catch (err) {
+            this.counter = 0;
+            this.objects.fileDropArea.classList.remove("hover");
         }
     };
     uploader.prototype.parseFile = function (file) {
@@ -114,12 +128,21 @@ var uploader = (function () {
                 o.appendChild(progress_1);
                 progress_1.appendChild(bar_1);
                 bar_1.className = "bar";
+                bar_1.style.width = 0 + "%";
                 bar_1.appendChild(document.createTextNode(file.name));
                 // progress bar
                 xhr.upload.addEventListener("progress", function (e) {
                     var pc = 100 - (e.loaded / e.total * 100);
                     bar_1.style.width = pc + "%";
                 }, false);
+                xhr.onprogress = function (e) {
+                    var pc = 100 - (e.loaded / e.total * 100);
+                    bar_1.style.width = pc + "%";
+                };
+                xhr.upload.onprogress = function (e) {
+                    var pc = 100 - (e.loaded / e.total * 100);
+                    bar_1.style.width = pc + "%";
+                };
                 // file received/failed
                 var self_2 = this;
                 xhr.onreadystatechange = function (e) {
@@ -178,6 +201,14 @@ var uploader = (function () {
                 var pc = (e.loaded / e.total * 100);
                 bar_2.style.width = pc + "%";
             }, false);
+            xhr.onprogress = function (e) {
+                var pc = 100 - (e.loaded / e.total * 100);
+                bar_2.style.width = pc + "%";
+            };
+            xhr.upload.onprogress = function (e) {
+                var pc = 100 - (e.loaded / e.total * 100);
+                bar_2.style.width = pc + "%";
+            };
             // file received/failed
             var self_3 = this;
             xhr.onreadystatechange = function (e) {
