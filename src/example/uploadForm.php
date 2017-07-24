@@ -46,10 +46,10 @@
 		maxSize: 3000000, //bytes
 		nette: true,
 		handlers: {
-			before: function(f){
+			before: function(){
 				console.log('Start');
 			},
-			after: function(f){
+			after: function(){
 				console.log('End');
 			}
 		}

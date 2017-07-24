@@ -11,6 +11,8 @@ var uploader = (function () {
             previewDiv: null
         };
         this.counter = 0;
+        this.filesCounter = 0;
+        this.filesCount = 0;
         var self = this;
         this.params = parameters;
         this.params.nette = this.params.nette ? this.params.nette : false;
@@ -54,19 +56,18 @@ var uploader = (function () {
         // cancel event and hover styling
         this.fileDragHover(e);
         this.counter = 0;
+        this.objects.fileDropArea.classList.remove("hover");
         // fetch FileList objects
         var files = e.target.files || e.dataTransfer.files;
+        this.filesCount = files.length;
+        if (this.params.handlers !== undefined && this.params.handlers.before !== undefined) {
+            this.params.handlers.before();
+        }
         // process all File objects
         for (var i = 0, f = void 0; f = files[i]; i++) {
             if (f.size <= this.params.maxSize) {
                 this.parseFile(f);
-                if (this.params.handlers !== undefined && this.params.handlers.before !== undefined) {
-                    this.params.handlers.before(f);
-                }
                 this.params.nette ? this.uploadFileNette(f) : this.uploadFile(f);
-                if (this.params.handlers !== undefined && this.params.handlers.after !== undefined) {
-                    this.params.handlers.after(f);
-                }
             }
             else {
                 if (typeof this.params.progressBarDiv !== 'undefined') {
@@ -132,15 +133,15 @@ var uploader = (function () {
                 bar_1.appendChild(document.createTextNode(file.name));
                 // progress bar
                 xhr.upload.addEventListener("progress", function (e) {
-                    var pc = 100 - (e.loaded / e.total * 100);
+                    var pc = (e.loaded / e.total * 100);
                     bar_1.style.width = pc + "%";
                 }, false);
                 xhr.onprogress = function (e) {
-                    var pc = 100 - (e.loaded / e.total * 100);
+                    var pc = (e.loaded / e.total * 100);
                     bar_1.style.width = pc + "%";
                 };
                 xhr.upload.onprogress = function (e) {
-                    var pc = 100 - (e.loaded / e.total * 100);
+                    var pc = (e.loaded / e.total * 100);
                     bar_1.style.width = pc + "%";
                 };
                 // file received/failed
@@ -148,10 +149,12 @@ var uploader = (function () {
                 xhr.onreadystatechange = function (e) {
                     if (xhr.readyState == 4) {
                         bar_1.className = (xhr.status === 200 ? "bar success" : "bar failure");
+                        bar_1.style.width = "100%";
                         if (xhr.status !== 200) {
                             self_2.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
                         }
                         $(progress_1).delay(5000).fadeOut(600);
+                        self_2.afterHandler();
                     }
                 };
             }
@@ -202,11 +205,11 @@ var uploader = (function () {
                 bar_2.style.width = pc + "%";
             }, false);
             xhr.onprogress = function (e) {
-                var pc = 100 - (e.loaded / e.total * 100);
+                var pc = (e.loaded / e.total * 100);
                 bar_2.style.width = pc + "%";
             };
             xhr.upload.onprogress = function (e) {
-                var pc = 100 - (e.loaded / e.total * 100);
+                var pc = (e.loaded / e.total * 100);
                 bar_2.style.width = pc + "%";
             };
             // file received/failed
@@ -214,10 +217,12 @@ var uploader = (function () {
             xhr.onreadystatechange = function (e) {
                 if (xhr.readyState == 4) {
                     bar_2.className = (xhr.status === 200 ? "bar success" : "bar failure");
+                    bar_2.style.width = "100%";
                     if (xhr.status !== 200) {
                         self_3.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
                     }
                     $(progress_2).delay(5000).fadeOut(600);
+                    self_3.afterHandler();
                 }
             };
         }
@@ -272,6 +277,14 @@ var uploader = (function () {
             message.appendChild(p);
             var messagesDiv = document.getElementById('uploaderMessages');
             messagesDiv.appendChild(message);
+        }
+    };
+    uploader.prototype.afterHandler = function () {
+        this.filesCounter++;
+        if (this.filesCount === this.filesCounter) {
+            if (this.params.handlers !== undefined && this.params.handlers.after !== undefined) {
+                this.params.handlers.after();
+            }
         }
     };
     return uploader;

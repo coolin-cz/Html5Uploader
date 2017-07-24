@@ -51,6 +51,9 @@ export class uploader{
 
 	private counter = 0;
 
+	private filesCounter = 0;
+	private filesCount = 0;
+
 
 	constructor(parameters: Params){ // TODO (Radim, 24-11-2016): Predelat parametry. Bude jich vic nez je pocet prvku v Uploader
 		let self = this;
@@ -103,23 +106,23 @@ export class uploader{
 		// cancel event and hover styling
 		this.fileDragHover(e);
 		this.counter = 0;
+		this.objects.fileDropArea.classList.remove("hover");
 
 		// fetch FileList objects
 		let files = e.target.files || e.dataTransfer.files;
+		this.filesCount = files.length;
+
+		if(this.params.handlers !== undefined && this.params.handlers.before !== undefined){
+			this.params.handlers.before();
+		}
 
 		// process all File objects
 		for(let i = 0, f; f = files[i]; i++){
 			if(f.size <= this.params.maxSize){
 				this.parseFile(f);
-				if(this.params.handlers !== undefined && this.params.handlers.before !== undefined){
-					this.params.handlers.before(f);
-				}
 
 				this.params.nette ? this.uploadFileNette(f) : this.uploadFile(f);
 
-				if(this.params.handlers !== undefined && this.params.handlers.after !== undefined){
-					this.params.handlers.after(f);
-				}
 			}else{
 				if(typeof this.params.progressBarDiv !== 'undefined'){
 					let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
@@ -196,17 +199,17 @@ export class uploader{
 
 				// progress bar
 				xhr.upload.addEventListener("progress", function(e: ProgressEvent){
-					let pc: number = 100 - (e.loaded / e.total * 100);
+					let pc: number = (e.loaded / e.total * 100);
 					bar.style.width = pc + "%"
 				}, false);
 
 				xhr.onprogress = function(e: ProgressEvent){
-					let pc: number = 100 - (e.loaded / e.total * 100);
+					let pc: number = (e.loaded / e.total * 100);
 					bar.style.width = pc + "%"
 				};
 
 				xhr.upload.onprogress = function(e: ProgressEvent){
-					let pc: number = 100 - (e.loaded / e.total * 100);
+					let pc: number = (e.loaded / e.total * 100);
 					bar.style.width = pc + "%"
 				};
 
@@ -215,10 +218,12 @@ export class uploader{
 				xhr.onreadystatechange = function(e){
 					if(xhr.readyState == 4){
 						bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
+						bar.style.width = "100%";
 						if(xhr.status !== 200){
 							self.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
 						}
 						$(progress).delay(5000).fadeOut(600);
+						self.afterHandler();
 					}
 				};
 			}
@@ -283,12 +288,12 @@ export class uploader{
 			}, false);
 
 			xhr.onprogress = function(e: ProgressEvent){
-				let pc: number = 100 - (e.loaded / e.total * 100);
+				let pc: number = (e.loaded / e.total * 100);
 				bar.style.width = pc + "%"
 			};
 
 			xhr.upload.onprogress = function(e: ProgressEvent){
-				let pc: number = 100 - (e.loaded / e.total * 100);
+				let pc: number = (e.loaded / e.total * 100);
 				bar.style.width = pc + "%"
 			};
 
@@ -297,10 +302,12 @@ export class uploader{
 			xhr.onreadystatechange = function(e){
 				if(xhr.readyState == 4){
 					bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
+					bar.style.width = "100%";
 					if(xhr.status !== 200){
 						self.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
 					}
 					$(progress).delay(5000).fadeOut(600);
+					self.afterHandler();
 				}
 			};
 		}
@@ -361,6 +368,15 @@ export class uploader{
 
 			let messagesDiv = document.getElementById('uploaderMessages');
 			messagesDiv.appendChild(message);
+		}
+	}
+
+	private afterHandler(){
+		this.filesCounter++;
+		if(this.filesCount === this.filesCounter){
+			if(this.params.handlers !== undefined && this.params.handlers.after !== undefined){
+				this.params.handlers.after();
+			}
 		}
 	}
 }
