@@ -11,7 +11,7 @@ class Uploader{
 
 	private $dir;
 
-	function __construct($dir = null){
+	public function __construct($dir = null){
 		$this->dir = $dir;
 	}
 
@@ -25,55 +25,64 @@ class Uploader{
 		$fn = (isset($_SERVER['HTTP_X_FILENAME']) ? $_SERVER['HTTP_X_FILENAME'] : false);
 
 		if(!$this->beforeHandler($fileName)){
-			throw new HandlerException();
+			throw new HandlerException('Error in beforeHandler!');
+		}
+
+		$path = $dir !== null ? $dir : $this->getDir();
+		if(!is_dir($path)){
+			/** @noinspection MkdirRaceConditionInspection */
+			mkdir($path, 0775, true);
 		}
 
 		if(!$fn){ //Byl odeslan formular
 			foreach($_FILES as $file){
-				if($file['error'] == UPLOAD_ERR_OK){
-					$fn = $fileName != null ? $fileName : $file['name'];
+				if($file['error'] === UPLOAD_ERR_OK){
+					$fn = $fileName !== null ? $fileName : $file['name'];
 
-					$path = $dir != null ? $dir : $this->getDir();
-					if(!is_dir($path)){
-						mkdir($path, 0775, true);
-					}
-
-					file_put_contents($path.'/'.$fn, file_get_contents($file['tmp_name']));
+					copy($file['tmp_name'], $path.'/'.$fn);
 				}
 			}
 		}else{
-			$name = $fileName != null ? $fileName : $fn;
-			$path = $dir != null ? $dir : $this->getDir();
-
-			if(!is_dir($path)){
-				mkdir($path, 0775, true);
-			}
+			$name = $fileName !== null ? $fileName : $fn;
 
 			$path = $path.'/'.$name;
 			try{
-				file_put_contents($path, file_get_contents('php://input'));
+				copy('php://input', $path);
 			}catch(\Exception $e){
-				throw new FileException("Error while saving File!", $e->getCode(), $e);
+				throw new FileException('Error while saving File!', $e->getCode(), $e);
 			}
 
 		}
 
 		if(!$this->afterHandler($fileName)){
-			throw new HandlerException();
+			throw new HandlerException('Error in afterHandler!');
 		}
 
 	}
 
-
+	/**
+	 * Metoda určená k přetížení ve vlastním rozšíření.
+	 * Volá se před zahájením uploadu každého souboru. Pro případ, že bychom si chtěli zalogovat začátek uploadu apod.
+	 *
+	 * @param string $fileName
+	 * @return bool
+	 */
 	public function beforeHandler($fileName){
 		return true;
 	}
 
+	/**
+	 * Metoda určená k přetížení ve vlastním rozšíření.
+	 * Volá se po dokončení uploadu každé fotky. Např. pokud si cheme zalogovat dokončení nahrávání, změnu galerie apod.
+	 *
+	 * @param string $fileName
+	 * @return bool
+	 */
 	public function afterHandler($fileName){
 		return true;
 	}
 
 	protected function getDir(){
-		return $this->dir != null ? $this->dir : '/*uploads';
+		return $this->dir !== null ? $this->dir : '/*uploads';
 	}
 }
