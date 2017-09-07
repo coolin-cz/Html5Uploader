@@ -1,7 +1,8 @@
+"use strict";
 /**
  * Created by Radim on 24.11.2016.
  */
-"use strict";
+exports.__esModule = true;
 var uploader = (function () {
     function uploader(parameters) {
         this.objects = {
@@ -161,7 +162,7 @@ var uploader = (function () {
             var form = document.getElementById(this.params.formId);
             // start upload
             xhr.open("POST", form.action, true);
-            xhr.setRequestHeader("X-FILENAME", file.name);
+            xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
             xhr.send(file);
         }
     };
@@ -184,6 +185,7 @@ var uploader = (function () {
             type: 'POST',
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("X-DRAGDROP", "yes");
+                xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
             }
         });
     };

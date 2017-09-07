@@ -232,7 +232,7 @@ export class uploader{
 
 			// start upload
 			xhr.open("POST", form.action, true);
-			xhr.setRequestHeader("X-FILENAME", file.name);
+			xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
 			xhr.send(file);
 
 		}
@@ -244,7 +244,7 @@ export class uploader{
 		data.append('file-0', file);
 
 
-		let action: String = $("[name=_do]", form).attr("value");
+		let action: string = $("[name=_do]", form).attr("value");
 		data.append("_do", action);
 
 		let self = this;
@@ -260,7 +260,8 @@ export class uploader{
 			processData: false,
 			type: 'POST',
 			beforeSend: function(xhr){
-				xhr.setRequestHeader("X-DRAGDROP", "yes")
+				xhr.setRequestHeader("X-DRAGDROP", "yes");
+				xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
 			},
 		});
 	}
