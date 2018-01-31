@@ -38,10 +38,15 @@ class Uploader{
 		$request = ServerRequest::fromGlobals();
 		$uploadedFiles = $request->getUploadedFiles();
 
-		foreach ($uploadedFiles as $uploadedFile) {
-			/** @var $uploadedFile \GuzzleHttp\Psr7\UploadedFile */
-			$name = $fileName ? $fileName : $uploadedFile->getClientFilename();
-			file_put_contents($path.'/'.$name, $uploadedFile->getStream()->getContents());
+		if(count($uploadedFiles) > 0){
+			foreach($uploadedFiles as $uploadedFile){
+				/** @var $uploadedFile \GuzzleHttp\Psr7\UploadedFile */
+				$name = $fileName ? $fileName : $uploadedFile->getClientFilename();
+				file_put_contents($path.'/'.$name, $uploadedFile->getStream()->getContents());
+			}
+		}else if($request->hasHeader('X-FILENAME')){
+			$name = $fileName ? $fileName : $request->getHeader('X-FILENAME');
+			file_put_contents($path.'/'.$name, $request->getBody()->getContents());
 		}
 
 		if(!$this->afterHandler($fileName)){
