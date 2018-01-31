@@ -2,6 +2,8 @@
 
 namespace Coolin\Html5Uploader;
 
+use GuzzleHttp\Psr7\ServerRequest;
+
 /**
  * Class Uploader
  * @author Coolin.cz
@@ -18,11 +20,10 @@ class Uploader{
 	/**
 	 * @param string $fileName
 	 * @param string $dir
-	 * @throws FileException
 	 * @throws HandlerException
+	 * @throws \RuntimeException
 	 */
 	public function upload($fileName = null, $dir = null){
-		$fn = (isset($_SERVER['HTTP_X_FILENAME']) ? $_SERVER['HTTP_X_FILENAME'] : false);
 
 		if(!$this->beforeHandler($fileName)){
 			throw new HandlerException('Error in beforeHandler!');
@@ -34,24 +35,13 @@ class Uploader{
 			mkdir($path, 0775, true);
 		}
 
-		if(!$fn){ //Byl odeslan formular
-			foreach($_FILES as $file){
-				if($file['error'] === UPLOAD_ERR_OK){
-					$fn = $fileName !== null ? $fileName : $file['name'];
+		$request = ServerRequest::fromGlobals();
+		$uploadedFiles = $request->getUploadedFiles();
 
-					copy($file['tmp_name'], $path.'/'.$fn);
-				}
-			}
-		}else{
-			$name = $fileName !== null ? $fileName : $fn;
-
-			$path = $path.'/'.$name;
-			try{
-				copy('php://input', $path);
-			}catch(\Exception $e){
-				throw new FileException('Error while saving File!', $e->getCode(), $e);
-			}
-
+		foreach ($uploadedFiles as $uploadedFile) {
+			/** @var $uploadedFile \GuzzleHttp\Psr7\UploadedFile */
+			$name = $fileName ? $fileName : $uploadedFile->getClientFilename();
+			file_put_contents($path.'/'.$name, $uploadedFile->getStream()->getContents());
 		}
 
 		if(!$this->afterHandler($fileName)){

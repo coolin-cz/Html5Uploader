@@ -21,7 +21,8 @@
     }
   ],
   "require": {
-    "php": ">= 5.6.1"
+    "php": ">= 5.6.1",
+    "guzzlehttp/guzzle": "~6.3.0"
   },
   "minimum-stability": "dev",
   "autoload": {
