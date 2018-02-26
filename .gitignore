@@ -28,3 +28,4 @@ Thumbs.db
 /vendor/
 /composer.lock
 /src/TS/node_modules/
+.idea/

@@ -180,90 +180,98 @@ export class uploader{
 
 	private uploadFile(file: File): void{
 		let xhr: XMLHttpRequest = new XMLHttpRequest();
-		if(xhr.upload && (file.type == "image/jpeg" || file.type == "image/png")){
+		if((file.type == "image/jpeg" || file.type == "image/png")){
+			if(xhr.upload){
 
-			// create progress bar
-			if(this.params.progressBarDiv != null){
-				let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
-				let progress = document.createElement("div");
-				let bar = document.createElement("div");
+				// create progress bar
+				if(this.params.progressBarDiv != null){
+					let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
+					let progress = document.createElement("div");
+					let bar = document.createElement("div");
 
-				progress.className = "progressBar";
-				o.appendChild(progress);
-				progress.appendChild(bar);
+					progress.className = "progressBar";
+					o.appendChild(progress);
+					progress.appendChild(bar);
 
-				bar.className = "bar";
-				bar.style.width = 0 + "%";
-				bar.appendChild(document.createTextNode(file.name));
+					bar.className = "bar";
+					bar.style.width = 0 + "%";
+					bar.appendChild(document.createTextNode(file.name));
 
 
-				// progress bar
-				xhr.upload.addEventListener("progress", function(e: ProgressEvent){
-					let pc: number = (e.loaded / e.total * 100);
-					bar.style.width = pc + "%"
-				}, false);
+					// progress bar
+					xhr.upload.addEventListener("progress", function(e: ProgressEvent){
+						let pc: number = (e.loaded / e.total * 100);
+						bar.style.width = pc + "%"
+					}, false);
 
-				xhr.onprogress = function(e: ProgressEvent){
-					let pc: number = (e.loaded / e.total * 100);
-					bar.style.width = pc + "%"
-				};
+					xhr.onprogress = function(e: ProgressEvent){
+						let pc: number = (e.loaded / e.total * 100);
+						bar.style.width = pc + "%"
+					};
 
-				xhr.upload.onprogress = function(e: ProgressEvent){
-					let pc: number = (e.loaded / e.total * 100);
-					bar.style.width = pc + "%"
-				};
+					xhr.upload.onprogress = function(e: ProgressEvent){
+						let pc: number = (e.loaded / e.total * 100);
+						bar.style.width = pc + "%"
+					};
 
-				// file received/failed
-				let self = this;
-				xhr.onreadystatechange = function(e){
-					if(xhr.readyState == 4){
-						bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
-						bar.style.width = "100%";
-						if(xhr.status !== 200){
-							self.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
+					// file received/failed
+					let self = this;
+					xhr.onreadystatechange = function(e){
+						if(xhr.readyState == 4){
+							bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
+							bar.style.width = "100%";
+							if(xhr.status !== 200){
+								self.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
+							}
+							$(progress).delay(5000).fadeOut(600);
+							self.afterHandler();
 						}
-						$(progress).delay(5000).fadeOut(600);
-						self.afterHandler();
-					}
-				};
+					};
+				}
+
+				let form: HTMLFormElement = <HTMLFormElement>document.getElementById(this.params.formId);
+
+				// start upload
+				xhr.open("POST", form.action, true);
+				xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
+				xhr.send(file);
+
 			}
-
-			let form: HTMLFormElement = <HTMLFormElement>document.getElementById(this.params.formId);
-
-			// start upload
-			xhr.open("POST", form.action, true);
-			xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
-			xhr.send(file);
-
+		}else{
+			this.showMessage("Neplatný formát obrázku", "error");
 		}
 	}
 
 	private uploadFileNette(file: File): void{
 		let form: HTMLFormElement = <HTMLFormElement>document.getElementById(this.params.formId);
-		var data = new FormData();
-		data.append('file-0', file);
+		if((file.type == "image/jpeg" || file.type == "image/png")){
+			var data = new FormData();
+			data.append('file-0', file);
 
 
-		let action: string = $("[name=_do]", form).attr("value");
-		data.append("_do", action);
+			let action: string = $("[name=_do]", form).attr("value");
+			data.append("_do", action);
 
-		let self = this;
+			let self = this;
 
-		$.ajax({
-			xhr: function(){
-				return self.createXhrForNette(file);
-			},
-			url: form.action,
-			data: data,
-			cache: false,
-			contentType: false,
-			processData: false,
-			type: 'POST',
-			beforeSend: function(xhr){
-				xhr.setRequestHeader("X-DRAGDROP", "yes");
-				xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
-			},
-		});
+			$.ajax({
+				xhr: function(){
+					return self.createXhrForNette(file);
+				},
+				url: form.action,
+				data: data,
+				cache: false,
+				contentType: false,
+				processData: false,
+				type: 'POST',
+				beforeSend: function(xhr){
+					xhr.setRequestHeader("X-DRAGDROP", "yes");
+					xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
+				},
+			});
+		}else{
+			this.showMessage("Neplatný formát obrázku.", "error");
+		}
 	}
 
 	private createXhrForNette(file: File){
