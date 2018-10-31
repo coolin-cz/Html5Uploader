@@ -263,6 +263,10 @@ define(["require", "exports"], function (require, exports) {
             var p = document.createElement("p");
             if (this.params.nette) {
                 var flashMessages = void 0;
+                if (this.params.flashHandler !== undefined) {
+                    this.params.flashHandler(msg, type);
+                    return;
+                }
                 p.textContent = msg;
                 var flashMessage = document.createElement("div");
                 flashMessage.className = "flashMessage " + type;

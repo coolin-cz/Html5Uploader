@@ -15,6 +15,7 @@ interface Params{
 	formId: string;
 	maxSize: number;
 	nette: boolean;
+	flashHandler: Function;
 	handlers: {
 		before: Function,
 		after: Function
@@ -348,6 +349,12 @@ export class uploader{
 
 		if(this.params.nette){
 			let flashMessages;
+
+			if(this.params.flashHandler !== undefined){
+				this.params.flashHandler(msg, type);
+				return;
+			}
+
 			p.textContent = msg;
 
 			let flashMessage = document.createElement("div");
