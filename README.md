@@ -1,4 +1,4 @@
-#HTML5 uploader
+# HTML5 uploader
 
 [![Latest Version](https://img.shields.io/packagist/v/coolin/html5uploader.svg)](https://packagist.org/packages/coolin/html5uploader)
 [![Issues](https://img.shields.io/github/issues/coolin-cz/html5uploader.svg)](https://github.com/coolin/Html5Uploader/issues)
@@ -12,3 +12,8 @@ The best way to install Coolin/html5uploader is using  [Composer](http://getcomp
 ```sh
 $ composer require coolin/html5uploader
 ```
+
+Use
+------------
+
+Small HTML5 photo uploader. Is extended for log start/finish of upload in PHP (for example to save info into database)
