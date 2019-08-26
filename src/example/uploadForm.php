@@ -35,7 +35,7 @@
 <button id="alias2">File Select 2</button>
 
 <script type="text/javascript">
-	var uploader = new Html5Uploader.uploader({
+	var uploader = new Html5Uploader.Html5uploader({
 		fileSelectId: "fileselect",
 		fileSelectAliases: ["alias", "alias2"],
 		fileDropAreaId: "filedrag",
@@ -44,7 +44,6 @@
 		progressBarDiv: "progress",
 		formId: "upload",
 		maxSize: 3000000, //bytes
-		nette: true,
 		handlers: {
 			before: function(){
 				console.log('Start');

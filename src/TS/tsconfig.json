@@ -2,8 +2,7 @@
   "compilerOptions": {
     "module": "amd",
     "target": "es5",
-    "sourceMap": false,
-    "watch": true
+    "sourceMap": false
   },
   "exclude": [
     "node_modules"

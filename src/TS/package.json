@@ -7,9 +7,11 @@
     "deploy": "webpack"
   },
   "dependencies": {
-    "ts-loader": "0.8.1",
-    "typescript": "2.3.2",
-    "uglifyjs-webpack-plugin": "0.4.6",
+    "ts-loader": "^4.0.0",
+    "typescript": "^2.4.1",
     "webpack": "2.3.1"
+  },
+  "devDependencies": {
+    "terser-webpack-plugin-legacy": "^1.2.3"
   }
 }

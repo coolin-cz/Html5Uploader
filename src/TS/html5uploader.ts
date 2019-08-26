@@ -1,10 +1,9 @@
 /**
- * Created by Radim on 24.11.2016.
+ * HTML5 Uploader by COOLIN
  */
+declare const $: any;
 
-declare var $;
-
-interface Params{
+interface IParams{
 	fileSelectId: string;
 	fileSelectAliases: string[];
 	fileDropAreaId: string;
@@ -14,7 +13,6 @@ interface Params{
 	progressBarDiv: string;
 	formId: string;
 	maxSize: number;
-	nette: boolean;
 	flashHandler: Function;
 	handlers: {
 		before: Function,
@@ -22,242 +20,125 @@ interface Params{
 	};
 }
 
-interface UploaderTest{
-	fileSelect: HTMLElement;
-	fileDropArea: HTMLElement;
-	submitButton: HTMLElement;
-	previewDiv: HTMLElement;
-}
+export class Html5uploader{
+	private params: IParams;
 
-interface FileReaderEventTarget extends EventTarget{
-	result: string
-}
-
-interface FileReaderEvent extends Event{
-	target: FileReaderEventTarget;
-
-	getMessage(): string;
-}
-
-export class uploader{
-
-	public objects: UploaderTest = {
-		fileSelect: null,
-		fileDropArea: null,
-		submitButton: null,
-		previewDiv: null,
-	};
-
-	private params: Params;
-
-	private counter = 0;
+	private elemPreview: HTMLElement;
+	private elemFileSelect: HTMLElement;
+	private elemFileDropArea: HTMLElement;
+	private elemSubmitBtn: HTMLElement;
 
 	private filesCounter = 0;
 	private filesCount = 0;
 
-
-	constructor(parameters: Params){ // TODO (Radim, 24-11-2016): Predelat parametry. Bude jich vic nez je pocet prvku v Uploader
-		let self = this;
+	constructor(parameters: IParams){
 		this.params = parameters;
 
-		this.params.nette = this.params.nette ? this.params.nette : false;
 		this.params.replacePreviews = this.params.replacePreviews ? this.params.replacePreviews : false;
 
-		self.createMessageDiv();
+		this.elemPreview = document.getElementById(this.params.previewDivId);
+		this.elemFileSelect = document.getElementById(this.params.fileSelectId);
+		this.elemFileDropArea = document.getElementById(this.params.fileDropAreaId);
+		this.elemSubmitBtn = document.getElementById(this.params.submitButtonId);
 
-		this.objects.fileSelect = document.getElementById(this.params.fileSelectId);
-		this.objects.fileSelect.addEventListener("change", function(e){
-			self.fileSelectHandler(e)
-		}, false);
+		this.setEventListeners();
+	}
 
-		if(typeof this.params.fileSelectAliases !== 'undefined' && this.params.fileSelectAliases.length > 0){
-			this.params.fileSelectAliases.forEach(function(value){
-				document.getElementById(value).addEventListener("click", function(e){
-					self.objects.fileSelect.click();
+	/**
+	 * Nastaveni vsech event listeners
+	 */
+	private setEventListeners(): void {
+		// file select
+		this.elemFileSelect.addEventListener("change", (e) =>{
+			this.fileSelectHandler(e)
+		});
+		// dalsi tlacitka file select
+		if(this.params.fileSelectAliases !== undefined && this.params.fileSelectAliases.length > 0){
+			this.params.fileSelectAliases.forEach((value) =>{
+				document.getElementById(value).addEventListener("click", () =>{
+					this.elemFileSelect.click();
 				});
 			});
 		}
-
-		this.objects.previewDiv = document.getElementById(this.params.previewDivId);
-		let xhr;
-		xhr = new XMLHttpRequest()
+		let xhr = new XMLHttpRequest();
 		if(xhr.upload){
-			this.objects.fileDropArea = document.getElementById(this.params.fileDropAreaId);
-			this.objects.fileDropArea.addEventListener("dragenter", function(e){
-				self.fileDragHover(e)
-			}, false);
-			this.objects.fileDropArea.addEventListener("dragleave", function(e){
-				self.fileDragHover(e)
-			}, false);
-			this.objects.fileDropArea.addEventListener("dragover", function(e){
+			this.elemFileDropArea.addEventListener("dragenter", (e) =>{
+				this.addHover(e);
+			});
+			this.elemFileDropArea.addEventListener("dragleave", (e) => {
+				this.removeHover(e);
+			});
+			this.elemFileDropArea.addEventListener("dragover", (e) =>{
 				e.preventDefault();
 				e.stopPropagation();
-			}, false);
-			this.objects.fileDropArea.addEventListener("drop", function(e){
-				self.fileSelectHandler(e)
-			}, false);
-			this.objects.fileDropArea.style.display = "block";
-
-			this.objects.submitButton = document.getElementById(this.params.submitButtonId);
-			this.objects.submitButton.style.display = "none";
+			});
+			this.elemFileDropArea.addEventListener("drop", (e) =>{
+				this.fileSelectHandler(e)
+			});
+			this.elemFileDropArea.style.display = "block";
+			this.elemSubmitBtn.style.display = "none";
 		}
 	}
 
-	fileSelectHandler(e: DragEvent | any): void{
-		// cancel event and hover styling
-		this.fileDragHover(e);
-		this.counter = 0;
-		this.objects.fileDropArea.classList.remove("hover");
-
+	/**
+	 * Zpracování files po drop nebo file select
+	 * @param e
+	 */
+	private fileSelectHandler(e): void{
+		this.removeHover(e);
 		// fetch FileList objects
 		let files = e.target.files || e.dataTransfer.files;
 		this.filesCount = files.length;
-
+		// spusteni before funkce
 		if(this.params.handlers !== undefined && this.params.handlers.before !== undefined){
 			this.params.handlers.before();
 		}
-
-		// process all File objects
-		for(let i = 0, f; f = files[i]; i++){
-			if(f.size <= this.params.maxSize){
-				this.parseFile(f);
-
-				this.params.nette ? this.uploadFileNette(f) : this.uploadFile(f);
-
+		// zpracovani vsech files
+		for(const file of files){
+			if(file.size <= this.params.maxSize){
+				this.parseFile(file);
+				this.uploadFile(file);
 			}else{
-				if(typeof this.params.progressBarDiv !== 'undefined'){
-					let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
-					let progress = document.createElement("div");
-					let bar = document.createElement("div");
-
-					progress.className = "progressBar";
-					o.appendChild(progress);
-					progress.appendChild(bar);
-
-					bar.className = "bar";
-					bar.appendChild(document.createTextNode(f.name));
-					bar.style.width = "100%"
-
+				if(this.params.progressBarDiv !== undefined){
+					let bar = this.createProgressBar(file.name);
+					bar.style.width = "100%";
 					bar.className = "bar failure";
-
-					$(progress).delay(5000).fadeOut(300);
+					this.removeProgressBar(bar);
 				}
-				this.showMessage("Obrázek " + f.name + " je příliš velký.", "error");
+				this.showMessage("Obrázek " + file.name + " je příliš velký.", "error");
 			}
 		}
 	}
 
-	public fileDragHover(e): void{
-		try{
-			e.preventDefault();
-			e.stopPropagation();
-			if(e.type == "dragenter"){
-				this.counter++;
-				this.objects.fileDropArea.classList.add("hover");
-			}else{
-				this.counter--;
-				if(this.counter === 0){
-					this.objects.fileDropArea.classList.remove("hover");
-				}
-			}
-		}catch(err){
-			this.counter = 0;
-			this.objects.fileDropArea.classList.remove("hover");
-		}
-	}
-
+	/**
+	 * Zpracovani file pres fileReader
+	 * @param file
+	 */
 	private parseFile(file: File): void{
-		if(file.type.indexOf("image") == 0 && this.params.previewDivId != null){
+		if(file.type.indexOf("image") === 0 && this.params.previewDivId !== null){
 			let reader = new FileReader();
-			let self = this;
-			reader.onload = function(e: FileReaderEvent){
-				self.showPreview(
-					'<img src="' + e.target.result + '" />'
-				);
+			reader.onload = () =>{
+				this.showPreview(reader.result.toString());
 			};
 			reader.readAsDataURL(file);
 		}
 	}
 
+	/**
+	 * Upload pres ajax
+	 * @param file
+	 */
 	private uploadFile(file: File): void{
-		let xhr: XMLHttpRequest = new XMLHttpRequest();
-		if((file.type == "image/jpeg" || file.type == "image/png")){
-			if(xhr.upload){
-
-				// create progress bar
-				if(this.params.progressBarDiv != null){
-					let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
-					let progress = document.createElement("div");
-					let bar = document.createElement("div");
-
-					progress.className = "progressBar";
-					o.appendChild(progress);
-					progress.appendChild(bar);
-
-					bar.className = "bar";
-					bar.style.width = 0 + "%";
-					bar.appendChild(document.createTextNode(file.name));
-
-
-					// progress bar
-					xhr.upload.addEventListener("progress", function(e: ProgressEvent){
-						let pc: number = (e.loaded / e.total * 100);
-						bar.style.width = pc + "%"
-					}, false);
-
-					xhr.onprogress = function(e: ProgressEvent){
-						let pc: number = (e.loaded / e.total * 100);
-						bar.style.width = pc + "%"
-					};
-
-					xhr.upload.onprogress = function(e: ProgressEvent){
-						let pc: number = (e.loaded / e.total * 100);
-						bar.style.width = pc + "%"
-					};
-
-					// file received/failed
-					let self = this;
-					xhr.onreadystatechange = function(e){
-						if(xhr.readyState == 4){
-							bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
-							bar.style.width = "100%";
-							if(xhr.status !== 200){
-								self.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
-							}
-							$(progress).delay(5000).fadeOut(600);
-							self.afterHandler();
-						}
-					};
-				}
-
-				let form: HTMLFormElement = <HTMLFormElement>document.getElementById(this.params.formId);
-
-				// start upload
-				xhr.open("POST", form.action, true);
-				xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
-				xhr.send(file);
-
-			}
-		}else{
-			this.showMessage("Neplatný formát obrázku", "error");
-		}
-	}
-
-	private uploadFileNette(file: File): void{
 		let form: HTMLFormElement = <HTMLFormElement>document.getElementById(this.params.formId);
-		if((file.type == "image/jpeg" || file.type == "image/png")){
-			var data = new FormData();
+		if((file.type === "image/jpeg" || file.type === "image/png")){
+			let data = new FormData();
 			data.append('file-0', file);
-
 
 			let action: string = $("[name=_do]", form).attr("value");
 			data.append("_do", action);
-
-			let self = this;
-
 			$.ajax({
-				xhr: function(){
-					return self.createXhrForNette(file);
+				xhr: () =>{
+					return this.createXhr(file);
 				},
 				url: form.action,
 				data: data,
@@ -265,7 +146,7 @@ export class uploader{
 				contentType: false,
 				processData: false,
 				type: 'POST',
-				beforeSend: function(xhr){
+				beforeSend: (xhr) =>{
 					xhr.setRequestHeader("X-DRAGDROP", "yes");
 					xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
 				},
@@ -275,87 +156,67 @@ export class uploader{
 		}
 	}
 
-	private createXhrForNette(file: File){
+	/**
+	 * Vytvoreni XHR a nastaveni progressBar
+	 * @param file
+	 */
+	private createXhr(file: File){
 		let xhr: XMLHttpRequest = new XMLHttpRequest();
 		// create progress bar
-		if(this.params.progressBarDiv != null){
-			let o: HTMLElement = document.getElementById(this.params.progressBarDiv);
-			let progress = document.createElement("div");
-			let bar = document.createElement("div");
-
-			progress.className = "upload";
-			o.appendChild(progress);
-			progress.appendChild(bar);
-
-			bar.className = "bar";
-			bar.appendChild(document.createTextNode(file.name));
-
-
+		if(this.params.progressBarDiv !== null){
+			let bar = this.createProgressBar(file.name);
 			// progress bar
-			xhr.upload.addEventListener("progress", function(e: ProgressEvent){
-				let pc: number = (e.loaded / e.total * 100);
-				bar.style.width = pc + "%"
-			}, false);
-
-			xhr.onprogress = function(e: ProgressEvent){
-				let pc: number = (e.loaded / e.total * 100);
-				bar.style.width = pc + "%"
+			xhr.upload.addEventListener("progress", (e: ProgressEvent) =>{
+				bar.style.width = (e.loaded / e.total * 100) + "%"
+			});
+			xhr.onprogress = (e: ProgressEvent) =>{
+				bar.style.width = (e.loaded / e.total * 100) + "%"
 			};
-
-			xhr.upload.onprogress = function(e: ProgressEvent){
-				let pc: number = (e.loaded / e.total * 100);
-				bar.style.width = pc + "%"
+			xhr.upload.onprogress = (e: ProgressEvent) =>{
+				bar.style.width = (e.loaded / e.total * 100) + "%"
 			};
 
 			// file received/failed
-			let self = this;
-			xhr.onreadystatechange = function(e){
-				if(xhr.readyState == 4){
+			xhr.onreadystatechange = () =>{
+				if(xhr.readyState === 4){
 					bar.className = (xhr.status === 200 ? "bar success" : "bar failure");
 					bar.style.width = "100%";
 					if(xhr.status !== 200){
-						self.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
+						this.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
 					}
-					$(progress).delay(5000).fadeOut(600);
-					self.afterHandler();
+					this.removeProgressBar(bar);
+					this.afterHandler();
 				}
 			};
 		}
 		return xhr;
 	}
 
-	private showPreview(msg: string): void{
+	/**
+	 * Zobrazeni preview obrazku
+	 * @param imgUrl
+	 */
+	private showPreview(imgUrl: string): void{
 		if(this.params.replacePreviews){
-			this.objects.previewDiv.innerHTML = msg;
+			this.elemPreview.innerHTML = `<img src='${imgUrl}'>`;
 		}else{
-			this.objects.previewDiv.innerHTML = this.objects.previewDiv.innerHTML + msg;
-		}
-
-	}
-
-	private createMessageDiv(){
-		if(!this.params.nette){ // pokud nepouzivame Nette vytvorime si div. pokud se pouziva Nette vyuzijeme flashmesages
-			let messageDiv = document.getElementById("uploaderMessages");
-			if(messageDiv === null){
-				messageDiv = document.createElement("div");
-				messageDiv.id = "uploaderMessages";
-				document.body.appendChild(messageDiv);
-			}
+			this.elemPreview.innerHTML = this.elemPreview.innerHTML + `<img src='${imgUrl}'>`;
 		}
 	}
 
+	/**
+	 * Zobrazeni flashMessage bud pres flashHandler nebo jeji vytvoreni
+	 * @param msg
+	 * @param type
+	 */
 	private showMessage(msg: string, type: string){
-		let p = document.createElement("p");
-
-		if(this.params.nette){
-			let flashMessages;
-
-			if(this.params.flashHandler !== undefined){
-				this.params.flashHandler(msg, type);
-				return;
-			}
-
+		if(this.params.flashHandler !== undefined){
+			this.params.flashHandler(msg, type);
+		}
+		else{
+			let p = document.createElement("p");
 			p.textContent = msg;
+			let flashMessages;
 
 			let flashMessage = document.createElement("div");
 			flashMessage.className = "flashMessage " + type;
@@ -364,8 +225,8 @@ export class uploader{
 			if(document.getElementsByClassName("flashMessages").length === 0){
 				flashMessages = document.createElement("section");
 				flashMessages.className = "flashMessages";
-				let snippet;
-				if((snippet = document.getElementById("snippet--flashMessages")) !== null){
+				let snippet = document.getElementById("snippet--flashMessages");
+				if(typeof snippet !== undefined && snippet !== null){
 					snippet.appendChild(flashMessages);
 				}else{
 					document.body.appendChild(flashMessages);
@@ -374,19 +235,12 @@ export class uploader{
 				flashMessages = document.getElementsByClassName("flashMessages")[0];
 			}
 			flashMessages.appendChild(flashMessage);
-
-		}else{
-			p.textContent = msg;
-
-			let message = document.createElement("div");
-			message.className = "message";
-			message.appendChild(p);
-
-			let messagesDiv = document.getElementById('uploaderMessages');
-			messagesDiv.appendChild(message);
 		}
 	}
 
+	/**
+	 * Vykonani after funkce po nahrani fotky
+	 */
 	private afterHandler(){
 		this.filesCounter++;
 		if(this.filesCount === this.filesCounter){
@@ -394,5 +248,53 @@ export class uploader{
 				this.params.handlers.after();
 			}
 		}
+	}
+
+	/**
+	 * Zastaveni event a pridani hover
+	 * @param e
+	 */
+	private addHover(e): void{
+		e.preventDefault();
+		e.stopPropagation();
+		this.elemFileDropArea.classList.add("hover");
+	}
+
+	/**
+	 * Zastaveni event a odebrani hover
+	 * @param e
+	 */
+	private removeHover(e): void{
+		e.preventDefault();
+		e.stopPropagation();
+		this.elemFileDropArea.classList.remove("hover");
+	}
+
+	/**
+	 * Vytvoreni progress bar
+	 * @param name
+	 */
+	private createProgressBar(name: string): HTMLElement{
+		let progressDiv: HTMLElement = document.getElementById(this.params.progressBarDiv);
+		let upload = document.createElement("div");
+		let bar = document.createElement("div");
+
+		upload.className = "upload";
+		progressDiv.appendChild(upload);
+		upload.appendChild(bar);
+
+		bar.className = "bar";
+		bar.appendChild(document.createTextNode(name));
+		return bar;
+	}
+
+	/**
+	 * Smaze dany progress bar
+	 * @param bar
+	 */
+	private removeProgressBar(bar: HTMLElement): void{
+		$(bar.parentElement).delay(5000).fadeOut(600, () =>{
+			bar.parentElement.remove();
+		});
 	}
 }

@@ -28,7 +28,7 @@
 #progress div.success{
 	background: #00cc00 none 0 0 no-repeat;
 }
-#progress div.failed{
+#progress div.failure{
 	background: #cc0000 none 0 0 no-repeat;
 }
 img{
