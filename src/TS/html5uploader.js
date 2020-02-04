@@ -1,310 +1,272 @@
-/**
- * Created by Radim on 24.11.2016.
- */
-define(["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var uploader = (function () {
-        function uploader(parameters) {
-            this.objects = {
-                fileSelect: null,
-                fileDropArea: null,
-                submitButton: null,
-                previewDiv: null,
-            };
-            this.counter = 0;
-            this.filesCounter = 0;
-            this.filesCount = 0;
-            var self = this;
-            this.params = parameters;
-            this.params.nette = this.params.nette ? this.params.nette : false;
-            this.params.replacePreviews = this.params.replacePreviews ? this.params.replacePreviews : false;
-            self.createMessageDiv();
-            this.objects.fileSelect = document.getElementById(this.params.fileSelectId);
-            this.objects.fileSelect.addEventListener("change", function (e) {
-                self.fileSelectHandler(e);
-            }, false);
-            if (typeof this.params.fileSelectAliases !== 'undefined' && this.params.fileSelectAliases.length > 0) {
-                this.params.fileSelectAliases.forEach(function (value) {
-                    document.getElementById(value).addEventListener("click", function (e) {
-                        self.objects.fileSelect.click();
-                    });
+"use strict";
+exports.__esModule = true;
+var Html5uploader = /** @class */ (function () {
+    function Html5uploader(parameters) {
+        this.filesCounter = 0;
+        this.filesCount = 0;
+        this.params = parameters;
+        this.params.replacePreviews = this.params.replacePreviews ? this.params.replacePreviews : false;
+        this.elemPreview = document.getElementById(this.params.previewDivId);
+        this.elemFileSelect = document.getElementById(this.params.fileSelectId);
+        this.elemFileDropArea = document.getElementById(this.params.fileDropAreaId);
+        this.elemSubmitBtn = document.getElementById(this.params.submitButtonId);
+        this.setEventListeners();
+    }
+    /**
+     * Nastaveni vsech event listeners
+     */
+    Html5uploader.prototype.setEventListeners = function () {
+        var _this = this;
+        // file select
+        this.elemFileSelect.addEventListener("change", function (e) {
+            _this.fileSelectHandler(e);
+        });
+        // dalsi tlacitka file select
+        if (this.params.fileSelectAliases !== undefined && this.params.fileSelectAliases.length > 0) {
+            this.params.fileSelectAliases.forEach(function (value) {
+                document.getElementById(value).addEventListener("click", function () {
+                    _this.elemFileSelect.click();
                 });
-            }
-            this.objects.previewDiv = document.getElementById(this.params.previewDivId);
-            var xhr;
-            xhr = new XMLHttpRequest();
-            if (xhr.upload) {
-                this.objects.fileDropArea = document.getElementById(this.params.fileDropAreaId);
-                this.objects.fileDropArea.addEventListener("dragenter", function (e) {
-                    self.fileDragHover(e);
-                }, false);
-                this.objects.fileDropArea.addEventListener("dragleave", function (e) {
-                    self.fileDragHover(e);
-                }, false);
-                this.objects.fileDropArea.addEventListener("dragover", function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, false);
-                this.objects.fileDropArea.addEventListener("drop", function (e) {
-                    self.fileSelectHandler(e);
-                }, false);
-                this.objects.fileDropArea.style.display = "block";
-                this.objects.submitButton = document.getElementById(this.params.submitButtonId);
-                this.objects.submitButton.style.display = "none";
-            }
+            });
         }
-        uploader.prototype.fileSelectHandler = function (e) {
-            // cancel event and hover styling
-            this.fileDragHover(e);
-            this.counter = 0;
-            this.objects.fileDropArea.classList.remove("hover");
-            // fetch FileList objects
-            var files = e.target.files || e.dataTransfer.files;
-            this.filesCount = files.length;
-            if (this.params.handlers !== undefined && this.params.handlers.before !== undefined) {
-                this.params.handlers.before();
-            }
-            // process all File objects
-            for (var i = 0, f = void 0; f = files[i]; i++) {
-                if (f.size <= this.params.maxSize) {
-                    this.parseFile(f);
-                    this.params.nette ? this.uploadFileNette(f) : this.uploadFile(f);
-                }
-                else {
-                    if (typeof this.params.progressBarDiv !== 'undefined') {
-                        var o = document.getElementById(this.params.progressBarDiv);
-                        var progress = document.createElement("div");
-                        var bar = document.createElement("div");
-                        progress.className = "progressBar";
-                        o.appendChild(progress);
-                        progress.appendChild(bar);
-                        bar.className = "bar";
-                        bar.appendChild(document.createTextNode(f.name));
-                        bar.style.width = "100%";
-                        bar.className = "bar failure";
-                        $(progress).delay(5000).fadeOut(300);
-                    }
-                    this.showMessage("Obrázek " + f.name + " je příliš velký.", "error");
-                }
-            }
-        };
-        uploader.prototype.fileDragHover = function (e) {
-            try {
+        var xhr = new XMLHttpRequest();
+        if (xhr.upload) {
+            this.elemFileDropArea.addEventListener("dragenter", function (e) {
+                _this.addHover(e);
+            });
+            this.elemFileDropArea.addEventListener("dragleave", function (e) {
+                _this.removeHover(e);
+            });
+            this.elemFileDropArea.addEventListener("dragover", function (e) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (e.type == "dragenter") {
-                    this.counter++;
-                    this.objects.fileDropArea.classList.add("hover");
+            });
+            this.elemFileDropArea.addEventListener("drop", function (e) {
+                _this.fileSelectHandler(e);
+            });
+            this.elemFileDropArea.style.display = "block";
+            this.elemSubmitBtn.style.display = "none";
+        }
+    };
+    /**
+     * Zpracování files po drop nebo file select
+     * @param e
+     */
+    Html5uploader.prototype.fileSelectHandler = function (e) {
+        this.removeHover(e);
+        // fetch FileList objects
+        var files = e.target.files || e.dataTransfer.files;
+        this.filesCount = files.length;
+        // spusteni before funkce
+        if (this.params.handlers !== undefined && this.params.handlers.before !== undefined) {
+            this.params.handlers.before();
+        }
+        // zpracovani vsech files
+        for (var _i = 0, files_1 = files; _i < files_1.length; _i++) {
+            var file = files_1[_i];
+            if (file.size <= this.params.maxSize) {
+                this.parseFile(file);
+                this.uploadFile(file);
+            }
+            else {
+                if (this.params.progressBarDiv !== undefined) {
+                    var bar = this.createProgressBar(file.name);
+                    bar.style.width = "100%";
+                    bar.className = "bar failure";
+                    this.removeProgressBar(bar);
                 }
-                else {
-                    this.counter--;
-                    if (this.counter === 0) {
-                        this.objects.fileDropArea.classList.remove("hover");
-                    }
-                }
+                this.showMessage("Obrázek " + file.name + " je příliš velký.", "error");
             }
-            catch (err) {
-                this.counter = 0;
-                this.objects.fileDropArea.classList.remove("hover");
-            }
-        };
-        uploader.prototype.parseFile = function (file) {
-            if (file.type.indexOf("image") == 0 && this.params.previewDivId != null) {
-                var reader = new FileReader();
-                var self_1 = this;
-                reader.onload = function (e) {
-                    self_1.showPreview('<img src="' + e.target.result + '" />');
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-        uploader.prototype.uploadFile = function (file) {
-            var xhr = new XMLHttpRequest();
-            if ((file.type == "image/jpeg" || file.type == "image/png")) {
-                if (xhr.upload) {
-                    // create progress bar
-                    if (this.params.progressBarDiv != null) {
-                        var o = document.getElementById(this.params.progressBarDiv);
-                        var progress_1 = document.createElement("div");
-                        var bar_1 = document.createElement("div");
-                        progress_1.className = "progressBar";
-                        o.appendChild(progress_1);
-                        progress_1.appendChild(bar_1);
-                        bar_1.className = "bar";
-                        bar_1.style.width = 0 + "%";
-                        bar_1.appendChild(document.createTextNode(file.name));
-                        // progress bar
-                        xhr.upload.addEventListener("progress", function (e) {
-                            var pc = (e.loaded / e.total * 100);
-                            bar_1.style.width = pc + "%";
-                        }, false);
-                        xhr.onprogress = function (e) {
-                            var pc = (e.loaded / e.total * 100);
-                            bar_1.style.width = pc + "%";
-                        };
-                        xhr.upload.onprogress = function (e) {
-                            var pc = (e.loaded / e.total * 100);
-                            bar_1.style.width = pc + "%";
-                        };
-                        // file received/failed
-                        var self_2 = this;
-                        xhr.onreadystatechange = function (e) {
-                            if (xhr.readyState == 4) {
-                                bar_1.className = (xhr.status === 200 ? "bar success" : "bar failure");
-                                bar_1.style.width = "100%";
-                                if (xhr.status !== 200) {
-                                    self_2.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
-                                }
-                                $(progress_1).delay(5000).fadeOut(600);
-                                self_2.afterHandler();
-                            }
-                        };
-                    }
-                    var form = document.getElementById(this.params.formId);
-                    // start upload
-                    xhr.open("POST", form.action, true);
+        }
+    };
+    /**
+     * Zpracovani file pres fileReader
+     * @param file
+     */
+    Html5uploader.prototype.parseFile = function (file) {
+        var _this = this;
+        if (file.type.indexOf("image") === 0 && this.params.previewDivId !== null) {
+            var reader_1 = new FileReader();
+            reader_1.onload = function () {
+                _this.showPreview(reader_1.result.toString());
+            };
+            reader_1.readAsDataURL(file);
+        }
+    };
+    /**
+     * Upload pres ajax
+     * @param file
+     */
+    Html5uploader.prototype.uploadFile = function (file) {
+        var _this = this;
+        var form = document.getElementById(this.params.formId);
+        if ((file.type === "image/jpeg" || file.type === "image/png")) {
+            var data = new FormData();
+            data.append('file-0', file);
+            var action = $("[name=_do]", form).attr("value");
+            data.append("_do", action);
+            $.ajax({
+                xhr: function () {
+                    return _this.createXhr(file);
+                },
+                url: form.action,
+                data: data,
+                cache: false,
+                contentType: false,
+                processData: false,
+                type: 'POST',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("X-DRAGDROP", "yes");
                     xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
-                    xhr.send(file);
                 }
-            }
-            else {
-                this.showMessage("Neplatný formát obrázku", "error");
-            }
-        };
-        uploader.prototype.uploadFileNette = function (file) {
-            var form = document.getElementById(this.params.formId);
-            if ((file.type == "image/jpeg" || file.type == "image/png")) {
-                var data = new FormData();
-                data.append('file-0', file);
-                var action = $("[name=_do]", form).attr("value");
-                data.append("_do", action);
-                var self_3 = this;
-                $.ajax({
-                    xhr: function () {
-                        return self_3.createXhrForNette(file);
-                    },
-                    url: form.action,
-                    data: data,
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    type: 'POST',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("X-DRAGDROP", "yes");
-                        xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
-                    },
-                });
-            }
-            else {
-                this.showMessage("Neplatný formát obrázku.", "error");
-            }
-        };
-        uploader.prototype.createXhrForNette = function (file) {
-            var xhr = new XMLHttpRequest();
-            // create progress bar
-            if (this.params.progressBarDiv != null) {
-                var o = document.getElementById(this.params.progressBarDiv);
-                var progress_2 = document.createElement("div");
-                var bar_2 = document.createElement("div");
-                progress_2.className = "upload";
-                o.appendChild(progress_2);
-                progress_2.appendChild(bar_2);
-                bar_2.className = "bar";
-                bar_2.appendChild(document.createTextNode(file.name));
-                // progress bar
-                xhr.upload.addEventListener("progress", function (e) {
-                    var pc = (e.loaded / e.total * 100);
-                    bar_2.style.width = pc + "%";
-                }, false);
-                xhr.onprogress = function (e) {
-                    var pc = (e.loaded / e.total * 100);
-                    bar_2.style.width = pc + "%";
-                };
-                xhr.upload.onprogress = function (e) {
-                    var pc = (e.loaded / e.total * 100);
-                    bar_2.style.width = pc + "%";
-                };
-                // file received/failed
-                var self_4 = this;
-                xhr.onreadystatechange = function (e) {
-                    if (xhr.readyState == 4) {
-                        bar_2.className = (xhr.status === 200 ? "bar success" : "bar failure");
-                        bar_2.style.width = "100%";
-                        if (xhr.status !== 200) {
-                            self_4.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
-                        }
-                        $(progress_2).delay(5000).fadeOut(600);
-                        self_4.afterHandler();
+            });
+        }
+        else {
+            this.showMessage("Neplatný formát obrázku.", "error");
+        }
+    };
+    /**
+     * Vytvoreni XHR a nastaveni progressBar
+     * @param file
+     */
+    Html5uploader.prototype.createXhr = function (file) {
+        var _this = this;
+        var xhr = new XMLHttpRequest();
+        // create progress bar
+        if (this.params.progressBarDiv !== null) {
+            var bar_1 = this.createProgressBar(file.name);
+            // progress bar
+            xhr.upload.addEventListener("progress", function (e) {
+                bar_1.style.width = (e.loaded / e.total * 100) + "%";
+            });
+            xhr.onprogress = function (e) {
+                bar_1.style.width = (e.loaded / e.total * 100) + "%";
+            };
+            xhr.upload.onprogress = function (e) {
+                bar_1.style.width = (e.loaded / e.total * 100) + "%";
+            };
+            // file received/failed
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    bar_1.className = (xhr.status === 200 ? "bar success" : "bar failure");
+                    bar_1.style.width = "100%";
+                    if (xhr.status !== 200) {
+                        _this.showMessage("Při nahrávání obrázku " + file.name + " došlo k chybě.", "error");
                     }
-                };
-            }
-            return xhr;
-        };
-        uploader.prototype.showPreview = function (msg) {
-            if (this.params.replacePreviews) {
-                this.objects.previewDiv.innerHTML = msg;
-            }
-            else {
-                this.objects.previewDiv.innerHTML = this.objects.previewDiv.innerHTML + msg;
-            }
-        };
-        uploader.prototype.createMessageDiv = function () {
-            if (!this.params.nette) {
-                var messageDiv = document.getElementById("uploaderMessages");
-                if (messageDiv === null) {
-                    messageDiv = document.createElement("div");
-                    messageDiv.id = "uploaderMessages";
-                    document.body.appendChild(messageDiv);
+                    _this.removeProgressBar(bar_1);
+                    _this.afterHandler();
                 }
-            }
-        };
-        uploader.prototype.showMessage = function (msg, type) {
+            };
+        }
+        return xhr;
+    };
+    /**
+     * Zobrazeni preview obrazku
+     * @param imgUrl
+     */
+    Html5uploader.prototype.showPreview = function (imgUrl) {
+        if (this.params.replacePreviews) {
+            this.elemPreview.innerHTML = '';
+        }
+        var preview = document.createElement("div");
+        preview.className = "preview";
+        var img = document.createElement("img");
+        img.setAttribute("src", imgUrl);
+        preview.appendChild(img);
+        if (this.params.loaderClass !== undefined) {
+            var loader = document.createElement('i');
+            loader.className = this.params.loaderClass;
+            preview.appendChild(loader);
+        }
+        this.elemPreview.appendChild(preview);
+        return preview;
+    };
+    /**
+     * Zobrazeni flashMessage bud pres flashHandler nebo jeji vytvoreni
+     * @param msg
+     * @param type
+     */
+    Html5uploader.prototype.showMessage = function (msg, type) {
+        if (this.params.flashHandler !== undefined) {
+            this.params.flashHandler(msg, type);
+        }
+        else {
             var p = document.createElement("p");
-            if (this.params.nette) {
-                var flashMessages = void 0;
-                if (this.params.flashHandler !== undefined) {
-                    this.params.flashHandler(msg, type);
-                    return;
-                }
-                p.textContent = msg;
-                var flashMessage = document.createElement("div");
-                flashMessage.className = "flashMessage " + type;
-                flashMessage.appendChild(p);
-                if (document.getElementsByClassName("flashMessages").length === 0) {
-                    flashMessages = document.createElement("section");
-                    flashMessages.className = "flashMessages";
-                    var snippet = void 0;
-                    if ((snippet = document.getElementById("snippet--flashMessages")) !== null) {
-                        snippet.appendChild(flashMessages);
-                    }
-                    else {
-                        document.body.appendChild(flashMessages);
-                    }
+            p.textContent = msg;
+            var flashMessages = void 0;
+            var flashMessage = document.createElement("div");
+            flashMessage.className = "flashMessage " + type;
+            flashMessage.appendChild(p);
+            if (document.getElementsByClassName("flashMessages").length === 0) {
+                flashMessages = document.createElement("section");
+                flashMessages.className = "flashMessages";
+                var snippet = document.getElementById("snippet--flashMessages");
+                if (typeof snippet !== undefined && snippet !== null) {
+                    snippet.appendChild(flashMessages);
                 }
                 else {
-                    flashMessages = document.getElementsByClassName("flashMessages")[0];
+                    document.body.appendChild(flashMessages);
                 }
-                flashMessages.appendChild(flashMessage);
             }
             else {
-                p.textContent = msg;
-                var message = document.createElement("div");
-                message.className = "message";
-                message.appendChild(p);
-                var messagesDiv = document.getElementById('uploaderMessages');
-                messagesDiv.appendChild(message);
+                flashMessages = document.getElementsByClassName("flashMessages")[0];
             }
-        };
-        uploader.prototype.afterHandler = function () {
-            this.filesCounter++;
-            if (this.filesCount === this.filesCounter) {
-                if (this.params.handlers !== undefined && this.params.handlers.after !== undefined) {
-                    this.params.handlers.after();
-                }
+            flashMessages.appendChild(flashMessage);
+        }
+    };
+    /**
+     * Vykonani after funkce po nahrani fotky
+     */
+    Html5uploader.prototype.afterHandler = function () {
+        this.filesCounter++;
+        if (this.filesCount === this.filesCounter) {
+            if (this.params.handlers !== undefined && this.params.handlers.after !== undefined) {
+                this.params.handlers.after();
             }
-        };
-        return uploader;
-    }());
-    exports.uploader = uploader;
-});
+        }
+    };
+    /**
+     * Zastaveni event a pridani hover
+     * @param e
+     */
+    Html5uploader.prototype.addHover = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.elemFileDropArea.classList.add("hover");
+    };
+    /**
+     * Zastaveni event a odebrani hover
+     * @param e
+     */
+    Html5uploader.prototype.removeHover = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.elemFileDropArea.classList.remove("hover");
+    };
+    /**
+     * Vytvoreni progress bar
+     * @param name
+     */
+    Html5uploader.prototype.createProgressBar = function (name) {
+        var progressDiv = document.getElementById(this.params.progressBarDiv);
+        var upload = document.createElement("div");
+        var bar = document.createElement("div");
+        upload.className = "upload";
+        progressDiv.appendChild(upload);
+        upload.appendChild(bar);
+        bar.className = "bar";
+        bar.appendChild(document.createTextNode(name));
+        return bar;
+    };
+    /**
+     * Smaze dany progress bar
+     * @param bar
+     */
+    Html5uploader.prototype.removeProgressBar = function (bar) {
+        $(bar.parentElement).delay(5000).fadeOut(600, function () {
+            bar.parentElement.remove();
+        });
+    };
+    return Html5uploader;
+}());
+exports.Html5uploader = Html5uploader;

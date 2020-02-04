@@ -10,6 +10,7 @@ interface IParams{
 	submitButtonId: string;
 	previewDivId: string;
 	replacePreviews: boolean;
+	loaderClass: string;
 	progressBarDiv: string;
 	formId: string;
 	maxSize: number;
@@ -196,12 +197,26 @@ export class Html5uploader{
 	 * Zobrazeni preview obrazku
 	 * @param imgUrl
 	 */
-	private showPreview(imgUrl: string): void{
+	private showPreview(imgUrl: string): HTMLDivElement{
 		if(this.params.replacePreviews){
-			this.elemPreview.innerHTML = `<img src='${imgUrl}'>`;
-		}else{
-			this.elemPreview.innerHTML = this.elemPreview.innerHTML + `<img src='${imgUrl}'>`;
+			this.elemPreview.innerHTML = '';
 		}
+
+		let preview = document.createElement("div");
+		preview.className = "preview";
+
+		let img = document.createElement("img");
+		img.setAttribute("src", imgUrl);
+		preview.appendChild(img);
+
+		if(this.params.loaderClass !== undefined){
+			let loader = document.createElement('i');
+			loader.className = this.params.loaderClass;
+			preview.appendChild(loader);
+		}
+		this.elemPreview.appendChild(preview);
+
+		return preview;
 	}
 
 	/**
