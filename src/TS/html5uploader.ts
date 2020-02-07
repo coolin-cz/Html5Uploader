@@ -32,6 +32,8 @@ export class Html5uploader{
 	private filesCounter = 0;
 	private filesCount = 0;
 
+	private counter = 0;
+
 	constructor(parameters: IParams){
 		this.params = parameters;
 
@@ -87,6 +89,7 @@ export class Html5uploader{
 	 */
 	private fileSelectHandler(e): void{
 		this.removeHover(e);
+		this.counter = 0;
 		// fetch FileList objects
 		let files = e.target.files || e.dataTransfer.files;
 		this.filesCount = files.length;
@@ -154,6 +157,9 @@ export class Html5uploader{
 			});
 		}else{
 			this.showMessage("Neplatný formát obrázku.", "error");
+			setTimeout(() =>{ // flashmessage se nekdy ani nestihla vytvorit, proto mensi zpozdeni pro afterhandler
+				this.afterHandler();
+			}, 500);
 		}
 	}
 
@@ -260,6 +266,7 @@ export class Html5uploader{
 		this.filesCounter++;
 		if(this.filesCount === this.filesCounter){
 			if(this.params.handlers !== undefined && this.params.handlers.after !== undefined){
+				this.filesCounter = 0; // pokud volame after, musime pak vynulovat filesCounter, aby priste pocital od nuly..
 				this.params.handlers.after();
 			}
 		}
@@ -272,6 +279,7 @@ export class Html5uploader{
 	private addHover(e): void{
 		e.preventDefault();
 		e.stopPropagation();
+		this.counter++;
 		this.elemFileDropArea.classList.add("hover");
 	}
 
@@ -282,7 +290,10 @@ export class Html5uploader{
 	private removeHover(e): void{
 		e.preventDefault();
 		e.stopPropagation();
-		this.elemFileDropArea.classList.remove("hover");
+		this.counter--;
+		if(this.counter === 0){
+			this.elemFileDropArea.classList.remove("hover");
+		}
 	}
 
 	/**
