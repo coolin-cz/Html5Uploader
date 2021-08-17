@@ -22,9 +22,9 @@
   ],
   "require": {
     "php": ">= 5.6.1",
-    "guzzlehttp/guzzle": "~6.3.0"
+    "guzzlehttp/guzzle": "~6.3.0 || ^7.0"
   },
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "autoload": {
     "classmap": [
       "src/"
