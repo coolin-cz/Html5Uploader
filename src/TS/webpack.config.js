@@ -1,4 +1,4 @@
-var TerserPlugin = require('terser-webpack-plugin-legacy');
+var TerserPlugin = require('terser-webpack-plugin');
 var path = require('path');
 module.exports = {
 	mode: "production",
@@ -13,7 +13,10 @@ module.exports = {
 	},
 	// Add minification
 	optimization: {
-		minimizer: [new TerserPlugin()]
+
+		minimizer: [new TerserPlugin({
+			extractComments: false,
+		})]
 	},
 	module: {
 		rules: [

@@ -152,7 +152,7 @@ export class Html5uploader{
 				type: 'POST',
 				beforeSend: (xhr) =>{
 					xhr.setRequestHeader("X-DRAGDROP", "yes");
-					xhr.setRequestHeader("X-FILENAME", file.name.toLocaleLowerCase());
+					xhr.setRequestHeader("X-FILENAME", encodeURIComponent(file.name.toLocaleLowerCase()));
 				},
 			});
 		}else{
